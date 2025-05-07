@@ -1,1 +1,4 @@
 *.csv
+.DS_Store
+qmd _as_.R.html
+qmd _as_.R_files/
