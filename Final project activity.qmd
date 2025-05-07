@@ -1,0 +1,709 @@
+---
+title: "Final project activity"
+author: "Obadiah Kiptoo, Nancy Odhiambo, Jeremiah Mogaka"
+format:
+  html:
+    self-contained: true
+    embed-resources: true
+error: true
+code-fold: true
+warning: false
+message: false
+---
+
+### Data set 1: United States Census Data: State-Level
+ 
+### Description
+
+Estimates from the United States American Community Survey (ACS) at the state level for the years 2008 through 2023 based on an annual sample size of approximately 3.5 million addresses including data on population, income, poverty rates, and demographic characteristics, excluding the year 2020 as this data is unavailable 🏠📋. The data is contained in census_data_state_2008-2023.csv.
+Note that estimates are from the 1-year American Community Survey (ACS), which do not rely on rolling period estimates.
+
+### Source
+
+Data was obtained via the tidycensus R package and the [United States Census website](https://www.census.gov/).
+
+## Data dictionary
+
+| **Variable**               | **Type**    | **Description**                                                                                       |
+|-----------------------------|-------------|-------------------------------------------------------------------------------------------------------|
+| geoid                      | character   | Geographic region ID with the first 2 digits being the state Federal Information Processing Standard (FIPS) code and the last 3 digits the county FIPS code |
+| county_state               | character   | Geographic region                                                                                    |
+| year                       | double      | Year                                                                                                |
+| population                 | double      | Population                                                                                          |
+| median_income              | double      | Median income in dollars                                                                            |
+| median_monthly_rent_cost   | double      | Median monthly rent costs for renters in dollars                                                    |
+| median_monthly_home_cost   | double      | Median monthly housing costs for homeowners in dollars                                              |
+| prop_female                | double      | Proportion of people who are female                                                                 |
+| prop_male                  | double      | Proportion of people who are male                                                                   |
+| prop_white                 | double      | Proportion of people who are white alone                                                            |
+| prop_black                 | double      | Proportion of people who are Black or African American alone                                        |
+| prop_native                | double      | Proportion of people who are American Indian and Alaska Native alone                                |
+| prop_asian                 | double      | Proportion of people who are Asian alone                                                            |
+| prop_hawaiin_islander      | double      | Proportion of people who are Native Hawaiian and Other Pacific Islander alone                       |
+| prop_other_race            | double      | Proportion of people who are some other race alone                                                  |
+| prop_multi_racial          | double      | Proportion of people who are two or more races                                                      |
+| prop_highschool            | double      | Proportion of people 25 and older whose highest education-level is high school                      |
+| prop_GED                   | double      | Proportion of people 25 and older whose highest education-level is a GED                            |
+| prop_some_college          | double      | Proportion of people 25 and older whose highest education-level is some, but less than 1 year of college |
+| prop_college_no_degree     | double      | Proportion of people 25 and older whose highest education-level is greater than 1 year of college but no degree |
+| prop_associates            | double      | Proportion of people 25 and older whose highest education-level is an Associates degree             |
+| prop_bachelors             | double      | Proportion of people 25 and older whose highest education-level is a Bachelors degree               |
+| prop_masters               | double      | Proportion of people 25 and older whose highest education-level is a Masters degree                 |
+| prop_professional          | double      | Proportion of people 25 and older whose highest education-level is a Professional degree            |
+| prop_doctoral              | double      | Proportion of people 25 and older whose highest education-level is a Doctoral degree                |
+| prop_poverty               | double      | Proportion of people 25 and older living in poverty, defined by the Census Bureau as having an income below the poverty threshold for their family size |
+
+## Data set 2: Elections Data 
+
+### Data Description 
+
+This data contains constituency county-level returns for elections to the U.S. presidency from 1976 to 2020 🏛🗳. The data is contained in countypres_2000-2020.csv.
+
+### Source 
+
+Data was obtained via the tidycensus R package and the United States Census website.
+
+## Elections Data Dictionary
+
+| **Variable**          | **Type**      | **Description**                                                                 |
+|--------------------|-----------|-----------------------------------------------------------------------------|
+| `year`            | double    | Election year                                                              |
+| `state`           | character | State name                                                                 |
+| `state_po`        | character | State postal code abbreviation                                             |
+| `state_fips`      | double    | State FIPS code                                                            |
+| `state_cen`       | double    | State census code                                                          |
+| `state_ic`        | double    | State Inter-university Consortium for Political and Social Research code   |
+| `office`          | character | Name of the public office to which the candidate is seeking election       |
+| `candidate`       | character | Candidate name                                                             |
+| `party_detailed`  | character | Full name of the candidate's political party                               |
+| `writein`         | logical   | Candidate is a write-in (TRUE or FALSE)                                    |
+| `candidatevotes`  | double    | Number of votes for candidate                                              |
+| `totalvotes`      | double    | Total votes cast in the election                                           |
+| `version`         | double    | Version                                                                    |
+| `notes`           | logical   | Notes                                                                      |
+| `party_simplified`| character | Just the major parties, with others marked as "other"  
+
+## Data Set 3: President Birthday
+
+### Data Dictionary 
+This data show the birthdays of all the US Presidents since 1732
+
+### Source 
+
+This data set was obtained from https://people.math.sc.edu/Burkardt/datasets/presidents/president_birthdays.csv
+
+### Data Dictionary
+
+| **Variable** | **Type**      | **Description**                                        |
+|----------|-----------|----------------------------------------------------|
+| `Index`  | integer   | Sequential identifier for each U.S. president      |
+| `Name`   | character | Full name of the U.S. president                    |
+| `Day`    | integer   | Day of the month the president was born (1–31)    |
+| `Month`  | character | Month the president was born (e.g., "February")   |
+| `Year`   | integer   | Year the president was born (e.g., 1732)  
+
+Loading necessary packages
+
+```{r}
+#| warning: FALSE
+#| message: FALSE
+
+
+library(dplyr)
+library(tidyverse)
+library(skimr)
+library(scales)
+library(flextable)
+library(mice)
+library(naniar)
+library(flextable)
+library(gt)
+library(magick)
+library(grid)
+library(ggplot2)
+library(lubridate)
+library(gtExtras)
+library(maps)
+library(usdata)
+library(plotly)
+library(ggplot2)
+```
+
+## Data cleaning
+
+### Loading data.
+
+First dataset
+```{r}
+census_data <- read.csv("https://raw.githubusercontent.com/dilernia/STA418-518/main/Data/census_data_state_2008-2023.csv")
+```
+
+Second dataset
+```{r}
+elections_data <- read.csv("https://raw.githubusercontent.com/dilernia/STA418-518/main/Data/countypres_2000-2020.csv")
+```
+
+```{r}
+president_birthdays<- read.csv("https://people.math.sc.edu/Burkardt/datasets/presidents/president_birthdays.csv")
+#Converting Name variable to uppercase letters.
+president_birthdays<-president_birthdays |>
+  mutate(Name = str_to_upper(Name))
+```
+
+### a.) Merging data.
+
+```{r,message=FALSE , warning=FALSE}
+#Subsetting elections data to acquire only aggregations for the candidate that had majority of votes in every state for the 2016 presidential general elections. 
+
+lead_elections_2016 <- elections_data |>
+  filter(year == 2016) |>
+  select(year, state, state_po, office, candidate, party, candidatevotes, totalvotes) |>
+  group_by(state, candidate) |>
+  summarise(
+    year = first(year),
+    state_po = first(state_po),
+    candidate = first(candidate),
+    candidate_votes = sum(candidatevotes, na.rm = TRUE),
+    total_votes = sum(totalvotes, na.rm = TRUE)
+  ) |>
+  ungroup() |>
+  arrange(state, desc(candidate_votes)) |>
+  filter(candidate_votes == max(candidate_votes), .by = state) # Relative majority filtering for the canidate that had majority of the votes per state.
+
+#Subsetting census data to acquire only census data form 2016.
+census_data_2016<-census_data |>
+  filter(year == 2016)
+
+census_data_2016 <-census_data_2016 |>
+  dplyr::mutate(county_state = str_to_upper(county_state)) |>
+  rename(state = county_state) #renaming the coutny_state to state because the column represents the state.
+composite_data_2016 <- census_data_2016 |>
+  left_join(lead_elections_2016, by = "state" )
+
+#joining data and creating a new variable named poverty_category for plotting a map.
+
+#Merging elections_data with president_birthdays data.
+presidents <- elections_data |>
+              left_join(president_birthdays, by = c("candidate" = "Name"))
+
+
+#Getting U.S. state level map data
+states_map <- map_data("state")
+# Merge map data with composite_data_2016
+composite <- composite_data_2016 |>
+  mutate(state = str_to_lower(state))
+merged_data <- composite |>
+  left_join(states_map, by = c("state" = "region"))
+
+#Creating a new variable named social_wealth_class
+lower <- min(merged_data$prop_poverty, na.rm = TRUE)
+upper <- max(merged_data$prop_poverty, na.rm = TRUE)
+range_width <- upper - lower
+break1 <- lower + range_width / 3
+break2 <- lower + 2 * range_width / 3
+merged_data <- merged_data |> 
+  mutate(
+    social_wealth_class = case_when(
+      prop_poverty <= break1 ~ "Upper Class",
+      prop_poverty <= break2 ~ "Middle Class",
+      TRUE ~ "Lower Class"
+    )
+  )
+```
+
+Data sets used in this project are census data state level, election data state level, and presidents birthdays data sets. The elections data was subset to get only values for 2016 as well the census data was subset to only work with the 2016 values. The two data sets were merged to form a composite_data_2016. Another subset was created presidents which was a merge between the elections data and presidents birthdays data set to be used for the lubridate function. With the groups intention of visualizing the highest candidate voted per state. A composite data set was created values of state variable changed to lower case and then further joined to the maps data set to create a merged_data. A new variable was then created from the merged_data to form a categorical variable social_wealth_class which contained values such as Upper class, middle class and lower class.
+
+### b.) String manipulation.
+
+```{r}
+#Alabama subset
+alabama_data <- elections_data |>
+  filter(county_name == "AUTAUGA")
+
+#Cleaning and extracting first and second names, excluding NAs
+candidate_names <- alabama_data |>
+  filter(!is.na(candidate) & candidate != "") |>  
+  mutate(candidate = str_replace_all(candidate, ",", "")) |>  
+  mutate(candidate = str_to_title(candidate)) |>  
+  mutate(name_parts = str_split(candidate, "\\s+")) |>  
+  unnest(name_parts) |>  
+  group_by(candidate) |>
+  mutate(name_position = row_number()) |>
+  ungroup()
+
+#Extracting first names, excluding NAs and commas
+first_names <- alabama_data |>
+  filter(!is.na(candidate) & candidate != "") |>  
+  mutate(candidate = str_replace_all(candidate, ",", "")) |>  
+  mutate(first_names = word(str_to_title(candidate), 1)) |>  
+  count(first_names, sort = TRUE)
+first_names|>
+  head(10)
+```
+For string manipulation we analyzed candidate names from election data specifically from the State of Alabama. Records with state name were filtered and cleaned and prepared the candidate column by removing missing or empty entries, stripping out commas, and converting names to title case. Candidate full name was stripped into first, middle and last name flattened into separate rows using unnest(). We extracted just the first word of each cleaned candidate name and counted the frequency of each sorting the results in descending order. Finally we displayed the top four most common first names among candidates in Autauga County.
+
+### c.) Datetime functions.
+
+```{r}
+# creating first_name column and birthdate column
+president_birthdays <- president_birthdays |>
+  mutate(
+    first_name = str_to_upper(word(str_trim(Name), 1)),
+    birthdate = make_date(Year, Month, Day)
+  )
+
+# Filter to Donald Trump to get birthdate
+trump_birthday <- president_birthdays |>
+  filter(first_name == "DONALD") |>
+  select(Name, birthdate)
+
+trump_birthday
+```
+```{r}
+# calculate age
+president_birthdays <- president_birthdays |>
+  mutate(
+    first_name = str_to_upper(word(str_trim(Name), 1)),
+    birthdate = make_date(Year, Month, Day),
+    age_years = floor(interval(birthdate, today()) / years(1))
+  )
+
+# 5 youngest presidents
+youngest_presidents <- president_birthdays |>
+  arrange(desc(birthdate)) |>   
+  slice_head(n=4)|>                 
+  select(Name, birthdate, age_years)
+
+youngest_presidents
+```
+
+## Exploratory Data Analysis
+
+### Exploring missingness.
+
+#### Exploring missingness for the census_data dataset.
+
+```{r}
+#Finding description and short summary statistics of the census_data dataset.
+skim(census_data)
+```
+Used skim() function to generate a comprehensive overview of the census_data dataset, including the number of missing values, distribution of data types, and summary statistics such as mean, min, and max for each variable. The data set has 1 character variable and 25 numeric values with 780 rows.The data set was clean with no missing values.
+### Plotting a lollipop plot to explore missingness
+
+```{r}
+gg_miss_var(census_data, show_pct = TRUE) + labs(title = "Percentage of missigness for census data")
+```
+Used gg_miss_var() function from the naniar package to visualize the percentage missingness using a lollipop which shows that none of the variables has any missing data.
+
+## Exploring missingness for the elections_data dataset.
+
+
+```{r}
+#Finding description and short summary statistics of the census_data dataset.
+skim(elections_data)
+```
+Used skim() fuction to visualize unique aspects of the data set at a glance. There were 7 character variables and 5 numeric variables with 72617 rows. The data set has 57 missing values in county_fips which makes the complete rate at 0.9992% which is almost 1 when rounded off thus nothing much done to impute values and fill the values.
+### Plotitng a lollipop plot to explore missingness
+
+```{r}
+gg_miss_var(elections_data, show_pct = TRUE) + labs(title = "Percentage missingness for elections dataset")
+```
+Used gg_miss_var() function from the naniar package to visualize the percentage missingness using a lollipop which shows that about 0.08% missingness percentage for county_fips with all the others being at 0.00%.
+
+
+### Tables of summary statistics.
+
+```{r}
+#Finding average monthly home cost and monthly rent cost per state
+census_data |>
+  group_by(county_state) |>
+    summarize(average_monthly_home_cost  = round(mean(median_monthly_home_cost, na.rm = TRUE),2),
+              average_monthly_rent =  round(mean(median_monthly_rent_cost, na.rm = TRUE))) |>
+  ungroup() |>
+  arrange(desc(average_monthly_home_cost)) |>
+  slice_head(n = 5) |>
+  flextable() |>
+  theme_vanilla() |>
+  add_header_lines("Top 5 states by average monthly home cost and monthly rent (2008-2023)")
+```
+The first summary table groups census_data by county_state and calculates the average monthly home cost and rent per state between 2008 and 2023. The flextable package is used to format the top 5 results into a clean readable table with a header line highlighting which states have the highest housing costs for both renting and home ownership.
+
+
+```{r}
+#Summarizing average poverty proportion by state.
+census_data |>
+  group_by(county_state) |>
+    summarize(average_poverty_proportion  = round(mean(prop_poverty,na.rm = TRUE),2),
+              average_monthly_home_cost  = round(mean(median_monthly_home_cost, na.rm = TRUE),2),
+              average_monthly_rent =  round(mean(median_monthly_rent_cost, na.rm = TRUE),2)) |>
+  ungroup() |>
+  arrange(desc(average_poverty_proportion)) |>
+  slice_head(n = 5) |>
+  gt::gt() |>
+  gt_theme_pff() |>
+  gt::tab_caption("Top 5 states by average poverty proportion average monthly home cost and rent cost (2008-2023)")
+```
+The second summary table computes the average poverty proportion alongside the average housing costs per state grouping by county_state. Using the gt package the top 5 states with the highest poverty proportions are displayed. This comparison allows a deeper look at how poverty correlates with housing expenses across states.
+
+
+### Data Visualizations.
+
+```{r}
+#creating a categorical variable named social wealth class which groups the proportions of poverty.
+lower <- min(census_data$prop_poverty, na.rm = TRUE)
+upper <- max(census_data$prop_poverty, na.rm = TRUE)
+range_width <- upper - lower
+break1 <- lower + range_width / 3
+break2 <- lower + 2 * range_width / 3
+census_data <- census_data |> 
+  mutate(
+    social_wealth_class = case_when(
+      prop_poverty <= break1 ~ "Upper Class",
+      prop_poverty <= break2 ~ "Middle Class",
+      TRUE ~ "Lower Class"
+    )
+  )
+```
+
+```{r}
+#Scatterplot of median monthly rent cost vs median monthly home cost.
+census_data |>
+  ggplot(aes(x =median_monthly_home_cost, 
+             y = median_monthly_rent_cost, 
+             color = social_wealth_class,size = social_wealth_class)) + geom_point(alpha = 0.5)+
+  scale_color_viridis_d(guide = "legend")+
+  labs(title = "Graph of median monthly rent vs median monthly home cost",
+       x = "Median monthly home cost($)",
+       y = "Median monthly rent cost($)",
+       caption = "Data Source: TidyCensus R & United states Census website") + 
+  theme_bw() +
+  theme(legend.position = "bottom")
+```
+The plot of median monthly rent vs median monthly home cost by social wealth class indicates the distribution of having a home either by renting or home ownership. The upper class shows to have more people owning homes and renting higher value houses. There is a positive relationship between increase in monthly home cost and increase in monthly rent cost
+
+
+
+```{r}
+
+#Barchart of monthly home ownership and rental costs.
+census_data |> 
+  group_by(county_state) |> 
+  summarize(
+    average_monthly_home_cost = mean(median_monthly_home_cost, na.rm = TRUE),
+    average_monthly_rent = mean(median_monthly_rent_cost, na.rm = TRUE)
+  ) |> 
+  ungroup() |> 
+  arrange(desc(average_monthly_home_cost)) |> 
+  slice_head(n = 10) |> 
+  pivot_longer(
+    cols = c(average_monthly_home_cost, average_monthly_rent),
+    names_to = "cost_type",
+    values_to = "value"
+  ) |> 
+  mutate(county_state = factor(county_state, levels = unique(county_state))) |>
+  ggplot(aes(x = county_state, y = value, fill = cost_type)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  scale_fill_viridis_d() +
+  labs(
+    title = "Top 10 Counties by Average Monthly Home and Rent Costs",
+    x = "State",
+    y = "Average Monthly Cost ($)",
+    caption = "Data Source: TidyCensus R & United States Census website"
+  ) +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    legend.position = "bottom"
+  )
+
+```
+This bar chart is used to compare home and rent costs across states. It is evident that home costs are higher than rent costs across all states. Also, here we view which states have the highest home and rent costs. We find that urban states have the highest home and rent costs in the United States which was the expected outcome as urbanization attracts more people thus driving up home and rent costs.  
+
+Line graph of total population over the years.
+ 
+```{r}
+census_data |>
+  select(year, population) |>
+  filter(!is.na(year), !is.na(population)) |>
+  group_by(year) |>
+  summarise(population = sum(population, na.rm = TRUE)) |>
+  ggplot(aes(x = year, y = population)) +
+  geom_line(color = "#B22234", linewidth = 1) +
+  geom_point(color = "#B22234", size = 3) +
+  scale_y_continuous(labels = scales::comma) +
+  scale_x_continuous(breaks = unique(census_data$year)) +
+  labs(
+    title = "Population over time",
+    x = "Year", 
+    y = "Population",
+    caption = "Data Source: TidyCensus R & United states Census website"
+  )+ 
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1)
+  )
+```
+The line graph shows a constant population growth in the United States from approximately 308,000 in 2008  to approximately 337,000 in 2023. 
+
+Countplot showing the number of states that a candidate had majority number of votes
+```{r}
+# Importing the American flag and adjusting transparency
+american_flag <- image_read("https://media.istockphoto.com/id/116768830/vector/american-flag-flowing-in-the-wind.jpg?s=2048x2048&w=is&k=20&c=EKhxFOKDvBeAMloZIo375whKytu_WzU62oIVz9H2tEM=") |>
+  image_colorize(opacity = 50, color = "white") # Add 50% white overlay for transparency
+
+# Convert the image to a raster object
+flag_raster <- rasterGrob(as.raster(american_flag), width = unit(1, "npc"), height = unit(1, "npc"))
+
+# Data manipulation
+data_summary <- composite_data_2016 |>
+  select(state, candidate, candidate_votes) |>
+  group_by(state) |>
+  filter(candidate_votes == max(candidate_votes)) |>
+  ungroup() |>
+  count(candidate)
+
+# Calculate the maximum value for 'n'
+max_n <- data_summary$n |> max()
+
+# Plotting
+data_summary |>
+  ggplot(aes(x = candidate, y = n, fill = candidate)) +
+  annotation_custom(flag_raster, xmin = -Inf, xmax = Inf, ymin = -Inf, ymax = Inf) +
+  geom_col() +
+  geom_text(aes(label = n), vjust = -0.5, colour = "red", fontface = "bold") + # Text labels in red and bold
+  scale_y_continuous(expand = c(0, 0), limits = c(0, max_n * 1.1)) + # Add 10% padding to the top
+  scale_fill_manual(
+    values = c(
+      "HILLARY CLINTON" = "#002147", # Royal blue for Hillary Clinton
+      "DONALD TRUMP" = "#B22234"    # Orange-red for Donald Trump
+    )
+  ) +
+  labs(
+    title = "Number of states Won by each candidate (2016)",
+    x = "",
+    y = "Number of States",
+    fill = "Candidate",
+    caption = "Data Source: Massachusetts Institute of Technology website"
+  ) +
+  theme_minimal() +
+  theme(
+    legend.position = "bottom", # Move legend to the bottom
+    text = element_text(face = "bold") # Set all text elements to bold
+  )
+```
+In this count plot, we show the total number of states each presidential candidate won in 2016. Trump, a republican candidate won 30 states, while Clinton, a democrat candidate won 21 States.
+### U.S 2016 Presidential elections winners by State
+
+```{r}
+lead_elections_2016 <- elections_data |>
+  filter(year == 2016) |>
+  select(year, state, state_po, office, candidate, party, candidatevotes, totalvotes) |>
+  group_by(state, candidate) |>
+  summarise(
+    year = first(year),
+    state_po = first(state_po),
+    candidate = first(candidate),
+    candidate_votes = sum(candidatevotes, na.rm = TRUE),
+    total_votes = sum(totalvotes, na.rm = TRUE)
+  ) |>
+  ungroup() |>
+  arrange(state, desc(candidate_votes)) |>
+  filter(candidate_votes == max(candidate_votes), .by = state)
+
+census_data_2016 <- census_data |>
+  filter(year == 2016) |>
+  mutate(county_state = str_to_upper(county_state)) |>
+  rename(state = county_state)
+
+composite_data_2016 <- census_data_2016 |>
+  left_join(lead_elections_2016, by = "state")
+
+states_map <- map_data("state")
+composite <- composite_data_2016 |>
+  mutate(state = str_to_lower(state))
+
+merged_data <- left_join(states_map, composite, by = c("region" = "state"))
+
+labels <- merged_data |>
+  group_by(region) |>
+  summarise(
+    lon = mean(range(long)),
+    lat = mean(range(lat)),
+    state_po = first(state_po)
+  )
+
+wealth_classes <- ggplot(merged_data, aes(x = long, y = lat, group = group, fill = candidate, text = region)) +
+  geom_polygon(color = "black", size = 0.3) +
+  coord_fixed(1.3) +
+  scale_fill_manual(
+    values = c("DONALD TRUMP" = "#B22234", "HILLARY CLINTON" = "#002147"),
+    name = "candidate") +
+  labs(
+    title = "Presidential Elections Winners By State (2016)",
+    caption = "Data Source: TidyCensus & US Maps"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "bottom") +
+  geom_text(
+    data = labels,
+    aes(x = lon, y = lat, label = state_po),
+    color = "black",
+    size = 2.5,
+    inherit.aes = FALSE
+  )
+
+# Convert to interactive plot
+ggplotly(wealth_classes, tooltip = c("text", "fill"))
+
+```
+After showing the total number of states won by each candidate earlier, now we visualize the states that each of them won. It is worth nothing that the democratic candidate won in more urban states while the republican candidate won in more rural states.
+
+## Permutation tests.
+
+### Testing for difference in median income between 2016 and 2023.
+#### Stating the hypothesis.
+$$  H_0: \mu_{\text{median salary2023}} = \mu_{\text{median salary2016}} $$
+$$  H_1: \mu_{\text{median salary2023}} > \mu_{\text{median salary2016}} $$
+
+```{r,warning=FALSE,message=FALSE}
+#reshaping the data to be used in performing the test
+census_income <- census_data |>
+  filter(year %in% c(2016, 2023)) |>
+  select(county_state,year, median_income) |>
+  mutate(year = as.character(year))|>
+   group_by(county_state,year) |>
+  summarise(median_income = median(median_income, na.rm = TRUE)) |>
+  ungroup()
+```
+
+
+```{r}
+#side by side boxplot to display income differences.
+census_income |> 
+  ggplot(aes(x = year, y = median_income,
+                         fill = year)) +
+  stat_boxplot(geom = "errorbar", width = 0.2, coef = 1.5) +
+  stat_boxplot(geom = "boxplot", width = 0.5, coef = 1.5,
+               outlier.shape = 8) +
+  stat_summary(fun = "mean", geom = "point", shape = 23, fill = "black",
+               color = "white") +
+  scale_fill_manual(values = c("#009E73", "#56B4E9")) +
+  scale_y_continuous(labels = scales::comma) +
+    coord_flip() +
+    labs(y = "Median salary",
+         title = "Comparison of median salary") +
+  theme(legend.position = "none")
+```
+
+
+```{r}
+#Reordering factor levels for t-test
+census_income <- census_income |> 
+  dplyr::mutate(year = fct_relevel(year, "2023", "2016"))
+
+# Two-sample t-test
+ttest_output <- t.test(formula = median_income ~ year,
+                       data = census_income,
+                       alternative = "greater")
+
+# Display results of t-test
+ttest_output |> 
+  broom::tidy() |> 
+  flextable() |> 
+  colformat_double(digits = 3) |> 
+set_formatter(p.value = function(x) {format.pval(x, digits = 3)}) |> 
+  set_caption("Results of two-sample t-test comparing median income between 2023 and 2016.") |> 
+  autofit() |> 
+  fit_to_width(max_width = 7)
+```
+
+
+
+```{r}
+# Calculating standard deviations and variances for each group
+census_income |> 
+  group_by(year) |> 
+  summarize(Mean = mean(median_income),
+            n = n(),
+            SD = sd(median_income))|> 
+  flextable() |> 
+  colformat_double(digits = 3) |> 
+  autofit()
+```
+
+### Implementing a two-sample t-test for 1000 random permutations.
+```{r}
+#Number of permutations to compute
+number_permutations <- 1000
+# Instantiating vector for test statistics
+permutation_stats <- vector(length = number_permutations)
+
+# Calculating t-test statistic for each permutation
+for(p in 1:number_permutations) {
+  permutation_stats[p] <- t.test(formula = median_income ~ year,
+                                      alternative = "greater",
+                                      data = census_income |> 
+    mutate(year = sample(year, replace = FALSE))) |> 
+    broom::tidy() |> 
+    pull(statistic)
+}
+```
+### Create a histogram displaying the null distribution obtained for the randomization test.
+
+Adding vertical lines to the plot to indicate where the 95th percentile is (a solid red line), and where our observed test statistic is (solid blue line).
+```{r}
+# organizing into a tibble.
+tidy_stats <- tibble(value = permutation_stats)
+
+#creating a histogram.
+tidy_stats |>
+  ggplot(aes(x = value)) + 
+  geom_histogram(color= "white" , aes(y = after_stat(density))) +
+  geom_density(color = "turquoise", linewidth = 1)+
+  stat_function(fun = function(x) dt(x, df = ttest_output$parameter),
+                color = "violet", linewidth = 1)+
+  scale_y_continuous(expand = expansion(mult = c(0,0.1))) +
+  geom_vline(xintercept = quantile(permutation_stats, probs = 0.95), color = "red", linetype = "solid") +
+  theme_minimal() +
+  geom_vline(xintercept = ttest_output$statistic, color = "blue", linetype = "solid")+
+  labs(title = "Randomization test null distribution",
+       x = "Test statistic",
+       y = "Frequency")
+
+```
+
+### Calculating the p value.
+
+```{r}
+#Calculating the p-value for the greater than test
+janitor::tabyl(permutation_stats > ttest_output$statistic)
+```
+The cutoff statistical significance is the 95th percentile of the randomization test. This implies that for the 500 permutation tests performed at no time the median salary of 2016 will be greater than that of 2023.
+
+### Final decision.
+
+**Decision**: At the 5% significance level, we reject the null since the p-value of 0.002 is less than 0.05.
+
+**Decision interpretation**: We conclude that at 5% level of significance there is enough evidence to conclude that the median salary for workers in 2023 is greater than that for workers in 2016.
+
+## Conclusions.
+Higher median household incomes correlated with increased support for certain political parties, suggesting economic status as a factor in voting preferences.
+
+This conslusion was arrived at after studying the income distribution using the prop-poverty and voting patterns. States with a lower prop_poverty were majorly urbanized states and from our earlier visualization those states majorly voted for the democratic candidate. 
+
+
+## Contributions of each group member
+
+The project was done concurrently for all the sections with 6 meetings. 
+
+Each member took lead in the following sections with support of all the other team members:
+
+Nanncy Odhiambo: Data loading and merging
+
+Jeremiah Mogaka: Data exploration string manipulation
+
+Obadiah Kiptioo: Permutations and creating the dashboards
+
+We worked together on our data visualizations 
+
+It was an enriching experience, working together and sharing knowledge from previous experiences as well as our class syllabus. 

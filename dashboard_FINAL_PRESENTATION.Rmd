@@ -1,0 +1,223 @@
+---
+title: "Vizualisations summary dashboard"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: columns
+    columns: 2
+    vertical_layout: fill
+    css: "style.css"
+    self-contained: TRUE
+runtime: shiny
+---
+
+```{r setup, include=FALSE, warning=FALSE, message=FALSE}
+library(flexdashboard)
+library(tidyverse)
+library(plotly)
+library(ggplot2)
+library(skimr)
+library(scales)
+library(flextable)
+library(mice)
+library(naniar)
+library(gt)
+library(magick)
+library(grid)
+library(lubridate)
+library(gtExtras)
+library(maps)
+```
+
+```{r data, include=FALSE}
+# Load census and election data
+census_data <- read.csv("https://raw.githubusercontent.com/dilernia/STA418-518/main/Data/census_data_state_2008-2023.csv")
+elections_data <- read_csv("https://raw.githubusercontent.com/dilernia/STA418-518/main/Data/countypres_2000-2020.csv")
+#creating a categorical variable named social wealth class which groups the proportions of poverty.
+lower <- min(census_data$prop_poverty, na.rm = TRUE)
+upper <- max(census_data$prop_poverty, na.rm = TRUE)
+range_width <- upper - lower
+break1 <- lower + range_width / 3
+break2 <- lower + 2 * range_width / 3
+census_data <- census_data |> 
+  mutate(
+    social_wealth_class = case_when(
+      prop_poverty <= break1 ~ "Upper Class",
+      prop_poverty <= break2 ~ "Middle Class",
+      TRUE ~ "Lower Class"
+    )
+  )
+```
+
+## Column 1
+
+### Home cost vs rent by wealth class
+
+```{r}
+m <- ggplot(
+  census_data,
+  aes(
+    x = median_monthly_home_cost,
+    y = median_monthly_rent_cost,
+    color = social_wealth_class,
+    size = social_wealth_class
+  )
+) +
+  geom_point(alpha = 0.3) +
+  scale_color_viridis_d(option = "D") +
+  labs(
+    title = " ",
+    x = "Median monthly home cost ($)",
+    y = "Median monthly rent cost ($)",
+    caption = "Data Source: TidyCensus & US Census Bureau"
+  ) +
+  theme_bw() +
+  theme(legend.position = "bottom")
+
+ggplotly(m, tooltip = c("x", "y", "color", "size")) |>
+  layout(
+    legend = list(
+      title = list(
+        text = "Wealth Class"),
+      orientation = "h",
+      x = 0.7,
+      xanchor = "right",
+      y = -0.5
+    )
+  )
+```
+
+### Top 10 counties by rent and home ownership
+
+```{r}
+bar_plot <- census_data |> 
+  group_by(county_state) |> 
+  summarize(
+    average_monthly_home_cost = mean(median_monthly_home_cost, na.rm = TRUE),
+    average_monthly_rent = mean(median_monthly_rent_cost, na.rm = TRUE)
+  ) |> 
+  ungroup() |> 
+  arrange(desc(average_monthly_home_cost)) |> 
+  slice_head(n = 10) |> 
+  pivot_longer(
+    cols = c(average_monthly_home_cost, average_monthly_rent),
+    names_to = "cost_type",
+    values_to = "value"
+  ) |> 
+  mutate(county_state = factor(county_state, levels = unique(county_state)))|>
+  ggplot( aes(x = county_state, y = value, fill = cost_type)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  scale_fill_viridis_d() +
+  labs(
+    title = " ",
+    x = "State",
+    y = "Average monthly cost ($)",
+    caption = "Data source: TidyCensus R & United States Census website"
+  ) +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    legend.position = "bottom"
+  )
+
+ggplotly(bar_plot, tooltip = c("x", "y", "fill")) |>
+  layout(
+    legend = list(
+      title = list(
+        text = "Wealth Class"))
+  )
+```
+
+## Column 2
+
+### Population change over time
+
+```{r}
+population_data <- census_data |>
+  select(year, population) |>
+  filter(!is.na(year), !is.na(population)) |>
+  group_by(year) |>
+  summarise(population = sum(population, na.rm = TRUE))
+
+population_plot <- ggplot(population_data, aes(x = year, y = population)) +
+  geom_line(color = "#B22234", linewidth = 1) +
+  geom_point(color = "#B22234", size = 3) +
+  scale_y_continuous(labels = scales::comma) +
+  scale_x_continuous(breaks = unique(census_data$year)) +
+  labs(
+    title = " ",
+    x = " ", 
+    y = "Population",
+    caption = "Data Source: TidyCensus R & United States Census website"
+  )+ 
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1)
+  )
+
+ggplotly(population_plot, tooltip = c("x", "y"))
+```
+
+### U.S. states by social wealth classes (2016)
+
+```{r}
+lead_elections_2016 <- elections_data |>
+  filter(year == 2016) |>
+  select(year, state, state_po, office, candidate, party, candidatevotes, totalvotes) |>
+  group_by(state, candidate) |>
+  summarise(
+    year = first(year),
+    state_po = first(state_po),
+    candidate = first(candidate),
+    candidate_votes = sum(candidatevotes, na.rm = TRUE),
+    total_votes = sum(totalvotes, na.rm = TRUE)
+  ) |>
+  ungroup() |>
+  arrange(state, desc(candidate_votes)) |>
+  filter(candidate_votes == max(candidate_votes), .by = state)
+
+census_data_2016 <- census_data |>
+  filter(year == 2016) |>
+  mutate(county_state = str_to_upper(county_state)) |>
+  rename(state = county_state)
+
+composite_data_2016 <- census_data_2016 |>
+  left_join(lead_elections_2016, by = "state")
+
+states_map <- map_data("state")
+composite <- composite_data_2016 |>
+  mutate(state = str_to_lower(state))
+
+merged_data <- left_join(states_map, composite, by = c("region" = "state"))
+
+labels <- merged_data |>
+  group_by(region) |>
+  summarise(
+    lon = mean(range(long)),
+    lat = mean(range(lat)),
+    state_po = first(state_po)
+  )
+
+wealth_classes <- ggplot(merged_data, aes(x = long, y = lat, group = group, fill = candidate, text = region)) +
+  geom_polygon(color = "black", size = 0.3) + 
+  coord_fixed(1.3) +
+  scale_fill_manual(
+    values = c("DONALD TRUMP" = "#B22234", "HILLARY CLINTON" = "#002147"),
+    name = "candidate"
+  ) +
+  labs(
+    title = " ",
+    caption = "Data Source: TidyCensus & US Maps"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "bottom") +
+  geom_text(
+    data = labels,
+    aes(x = lon, y = lat, label = state_po),
+    color = "black",
+    size = 2.5,
+    inherit.aes = FALSE
+  )
+
+# Convert to interactive plot
+ggplotly(wealth_classes, tooltip = c("text", "fill"))
+```
