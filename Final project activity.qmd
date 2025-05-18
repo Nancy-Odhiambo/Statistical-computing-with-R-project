@@ -698,11 +698,11 @@ The project was done concurrently for all the sections with 6 meetings.
 
 Each member took lead in the following sections with support of all the other team members:
 
-Nanncy Odhiambo: Data loading and merging
+Nanncy Odhiambo: Data loading, Data exploration, string manipulation and merging
 
-Jeremiah Mogaka: Data exploration string manipulation
+Jeremiah Mogaka: creating the dashboards
 
-Obadiah Kiptioo: Permutations and creating the dashboards
+Obadiah Kiptioo: Permutations 
 
 We worked together on our data visualizations 
 
